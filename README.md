@@ -52,20 +52,6 @@ Example output from a real application (not from the above):
 ```
 
 
-## Backwards Compatibility
-
-This project is the result of a split that occurred early in the life of [go-appengine-logging](https://github.com/dsoprea/go-appengine-logging). That was the original project and it had a limited amount of functionality in the beginning. Once it got implemented and experienced some natural growth it became very, very useful and, simultaneously, non-trivial enough that we weren't thrilled about duplicating it into a non-AppEngine-specific project (the original plan).
-
-Without getting into too much unnecessary detail, the following decisions were made:
-
-1. The main project would be *go-logging*. **Any existing references to *go-appengine-logging* in any projects that depend on this would have to be updated.**
-2. Because the *go-logging* code could no longer be intrinsically aware of *go-appengine-logging*, **applications that use *go-logging* must specifically import *go-appengine-logging* and register the one with the other**.
-
-This will break anyone that is not vendoring *go-appengine-logging*, but, as that was an AppEngine-specific project and AE projects are predisposed to vendoring everything, this won't be an issue unless you update. Plus, that project is still pretty recent and adoption is still jsut ramping up.
-
-Sorry for any inconvenience. The original project completely changed the debugging experience for AppEngine and I wanted to bring that over to general Go development.
-
-
 ## Adapters
 
 This project provides one built-in logging adapter: "console", which prints to the screen. To register it:
