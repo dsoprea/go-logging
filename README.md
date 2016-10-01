@@ -61,6 +61,8 @@ cam := log.NewConsoleAdapterMaker()
 log.AddAdapterMaker("console", cam)
 ```
 
+### Custom Adapters
+
 If you would like to implement your own logger, just create a struct type that satisfies the LogAdapter interface.
 
 ```go
@@ -81,7 +83,7 @@ type LogContext struct {
 }
 ```
 
-Note that *Logger* represents your Logger instance. It exports `Noun()` in the event you want to discriminate where your log entries go. It also exports `Adapter()` for if you need access to the adapter instance.
+`Logger` represents your Logger instance.
 
 Adapter example:
 
@@ -105,16 +107,12 @@ func (dla *DummyLogAdapter) Warningf(lc *LogContext, message *string) error {
 func (dla *DummyLogAdapter) Errorf(lc *LogContext, message *string) error {
     
 }
-
-func (dla *DummyLogAdapter) Criticalf(lc *LogContext, message *string) error {
-    
-}
 ```
 
 There are a couple of ways to tell Logger to use a specific adapter:
 
-1. Instead of calling `log.NewLogger(noun string)`, call `log.NewLoggerWithAdapter(noun string, adapterName string)` and provide a struct of your adapter type.
-2. Register a factory type for your adapter and set the name of the adapter into your YAML configuration (under `env_variables`).
+1. Instead of calling `log.NewLogger(noun string)`, call `log.NewLoggerWithAdapter(noun string, adapterName string)`.
+2. Register a factory type for your adapter and set the name of the adapter from your configuration.
 
 
 The factory must satisfy the *AdapterMaker* interface:
@@ -146,6 +144,12 @@ func init() {
 ```
 
 We discuss how to then reference the adapter-maker from configuration in the "Configuration" section below.
+
+
+### Adapter Notes
+
+- The `Logger` instance exports `Noun()` in the event you want to discriminate where your log entries go in your adapter. It also exports `Adapter()` for if you need to access the adapter instance from your application.
+- If no adapter is registered (specifically, the default adapter-name remains empty), logging calls will be a no-op. This allows libraries to implement *go-logging* where the larger application doesn't.
 
 
 ## Filters

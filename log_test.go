@@ -329,3 +329,17 @@ func TestStaticConfiguration(t *testing.T) {
         t.Error("Static configuration provider was not set correctly: excludeBypassLevelName")
     }
 }
+
+func TestNoAdapter(t *testing.T) {
+    ClearAdapters()
+
+    l := NewLogger("logTest")
+
+    if l.Adapter() != nil {
+        t.Error("Adapter on logger when no adapters was not nil.")
+    }
+
+    // Should be allowed, but nothing will happen.
+    err := e.New("an error happened")
+    l.Errorf(nil, err, "Error message")
+}

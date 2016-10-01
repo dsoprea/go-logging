@@ -303,18 +303,27 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
 }
 
 func (l *Logger) Debugf(ctx context.Context, format string, args ...interface{}) {
-    l.doConfigure(false)
-    l.log(ctx, LevelDebug, l.la.Debugf, format, args)
+    // Only log if an adapter has chosen.
+    if GetDefaultAdapterName() != "" {
+        l.doConfigure(false)
+        l.log(ctx, LevelDebug, l.la.Debugf, format, args)
+    }
 }
 
 func (l *Logger) Infof(ctx context.Context, format string, args ...interface{}) {
-    l.doConfigure(false)
-    l.log(ctx, LevelInfo, l.la.Infof, format, args)
+    // Only log if an adapter has chosen.
+    if GetDefaultAdapterName() != "" {
+        l.doConfigure(false)
+        l.log(ctx, LevelInfo, l.la.Infof, format, args)
+    }
 }
 
 func (l *Logger) Warningf(ctx context.Context, format string, args ...interface{}) {
-    l.doConfigure(false)
-    l.log(ctx, LevelWarning, l.la.Warningf, format, args)
+    // Only log if an adapter has chosen.
+    if GetDefaultAdapterName() != "" {
+        l.doConfigure(false)
+        l.log(ctx, LevelWarning, l.la.Warningf, format, args)
+    }
 }
 
 func (l *Logger) mergeStack(err interface{}, format string, args []interface{}) (string, []interface{}) {
@@ -335,39 +344,86 @@ func (l *Logger) mergeStack(err interface{}, format string, args []interface{}) 
     return format, args
 }
 
-func (l *Logger) Errorf(ctx context.Context, err interface{}, format string, args ...interface{}) {
-    l.doConfigure(false)
+func (l *Logger) Errorf(ctx context.Context, errRaw interface{}, format string, args ...interface{}) {
+    var err interface{}
 
-    format, args = l.mergeStack(err, format, args)
-    l.log(ctx, LevelError, l.la.Errorf, format, args)
+    _, ok := errRaw.(*errors.Error)
+    if ok == true {
+        err = errRaw
+    } else {
+        err = errors.Wrap(errRaw, 1)
+    }
+
+    // Only log if an adapter has chosen.
+    if GetDefaultAdapterName() != "" {
+        l.doConfigure(false)
+
+        format, args = l.mergeStack(err, format, args)
+        l.log(ctx, LevelError, l.la.Errorf, format, args)
+    }
 }
 
-func (l *Logger) ErrorIff(ctx context.Context, err interface{}, format string, args ...interface{}) {
-    if err == nil {
+func (l *Logger) ErrorIff(ctx context.Context, errRaw interface{}, format string, args ...interface{}) {
+    if errRaw == nil {
         return
+    }
+
+    var err interface{}
+
+    _, ok := errRaw.(*errors.Error)
+    if ok == true {
+        err = errRaw
+    } else {
+        err = errors.Wrap(errRaw, 1)
     }
 
     l.Errorf(ctx, err, format, args...)
 }
 
-func (l *Logger) Panicf(ctx context.Context, err interface{}, format string, args ...interface{}) {
-    l.doConfigure(false)
+func (l *Logger) Panicf(ctx context.Context, errRaw interface{}, format string, args ...interface{}) {
+    var err interface{}
 
-    format, args = l.mergeStack(err, format, args)
-    errFlat := l.log(ctx, LevelError, l.la.Errorf, format, args)
-    panic(errFlat)
+    _, ok := errRaw.(*errors.Error)
+    if ok == true {
+        err = errRaw
+    } else {
+        err = errors.Wrap(errRaw, 1)
+    }
+
+    // Only log if an adapter has chosen.
+    if GetDefaultAdapterName() != "" {
+        l.doConfigure(false)
+
+        format, args = l.mergeStack(err, format, args)
+        err = l.log(ctx, LevelError, l.la.Errorf, format, args)
+    }
+
+    Panic(err.(error))
 }
 
-func (l *Logger) PanicIff(ctx context.Context, err interface{}, format string, args ...interface{}) {
-    if err == nil {
+func (l *Logger) PanicIff(ctx context.Context, errRaw interface{}, format string, args ...interface{}) {
+    if errRaw == nil {
         return
     }
 
-    _, ok := err.(*errors.Error)
+    var err interface{}
+
+    _, ok := errRaw.(*errors.Error)
     if ok == true {
-        panic(err)
+        err = errRaw
     } else {
-        panic(errors.Wrap(err, 1))
+        err = errors.Wrap(errRaw, 1)
+    }
+
+    l.Panicf(ctx, err.(error), format, args...)
+}
+
+func Wrap(err interface{}) *errors.Error {
+    es, ok := err.(*errors.Error)
+    if ok == true {
+        return es
+    } else {
+        return errors.Wrap(err, 1)
     }
 }
 
@@ -377,15 +433,6 @@ func Panic(err interface{}) {
         panic(err)
     } else {
         panic(errors.Wrap(err, 1))
-    }
-}
-
-func Wrap(err interface{}) *errors.Error {
-    es, ok := err.(*errors.Error)
-    if ok == true {
-        return es
-    } else {
-        return errors.Wrap(err, 1)
     }
 }
 
