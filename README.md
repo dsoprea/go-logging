@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/dsoprea/go-logging.svg?branch=master)](https://travis-ci.org/dsoprea/go-logging)
+[![Coverage Status](https://coveralls.io/repos/github/dsoprea/go-logging/badge.svg?branch=master)](https://coveralls.io/github/dsoprea/go-logging?branch=master)
 
 ## Introduction
 
