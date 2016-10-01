@@ -402,12 +402,6 @@ func PanicIf(err interface{}) {
     }
 }
 
-// The adapter will automatically be the first one registered. This overrides 
-// that.
-func SetDefaultAdapterName(name string) {
-    adapterName = name
-}
-
 func init() {
     if format == "" {
         format = defaultFormat

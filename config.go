@@ -51,6 +51,17 @@ var (
     configurationLoaded = false
 )
 
+// Return the current default adapter name.
+func GetDefaultAdapterName() string {
+    return adapterName
+}
+
+// The adapter will automatically be the first one registered. This overrides 
+// that.
+func SetDefaultAdapterName(name string) {
+    adapterName = name
+}
+
 func LoadConfiguration(cp ConfigurationProvider) {
     adapterName = cp.AdapterName()
     includeNouns = cp.IncludeNouns()

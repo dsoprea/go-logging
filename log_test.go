@@ -4,7 +4,7 @@ import (
     "math/rand"
 
     "testing"
-    e   "errors"
+    e "errors"
 )
 
 // Extends the default environment configuration-provider to set the level to 
@@ -237,17 +237,20 @@ func TestDefaultAdapterAssignment(t *testing.T) {
     tam := newTestAdapterMaker()
     AddAdapterMaker("test1", tam)
 
-    if adapterName == "" {
+    an := GetDefaultAdapterName()
+    if an == "" {
         t.Error("Default adapter not set after registration.")
     }
 
-    if adapterName != "test1" {
-        t.Error("Default adapter not set to our adapter after registration.", adapterName)
+    an = GetDefaultAdapterName()
+    if an != "test1" {
+        t.Error("Default adapter not set to our adapter after registration.", an)
     }
 
     SetDefaultAdapterName("test2")
-    if adapterName != "test2" {
-        t.Error("SetAdapterName() did not set default adapter correctly.", adapterName)
+    an = GetDefaultAdapterName()
+    if an != "test2" {
+        t.Error("SetDefaultAdapterName() did not set default adapter correctly.", an)
     }
 }
 
@@ -306,7 +309,7 @@ func TestStaticConfiguration(t *testing.T) {
         t.Error("Static configuration provider was not set correctly: format")
     }
 
-    if adapterName != "bb" {
+    if GetDefaultAdapterName() != "bb" {
         t.Error("Static configuration provider was not set correctly: adapterName")
     }
 
