@@ -1,4 +1,4 @@
-|Build\_Status|
+[![Build Status](https://travis-ci.org/dsoprea/go-logging.svg?branch=master)](https://travis-ci.org/dsoprea/go-logging)
 
 ## Introduction
 
