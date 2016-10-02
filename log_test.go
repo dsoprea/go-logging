@@ -27,7 +27,7 @@ func (ec *testConfigurationProvider) Format() string {
     return ""
 }
 
-func (ec *testConfigurationProvider) AdapterName() string {
+func (ec *testConfigurationProvider) DefaultAdapterName() string {
     return ""
 }
 
@@ -67,6 +67,12 @@ type testLogAdapter struct {
     errorTriggered bool
 }
 
+func newTestLogAdapter() LogAdapter {
+    return &testLogAdapter{
+        id: rand.Int(),
+    }
+}
+
 func (tla *testLogAdapter) Debugf(lc *LogContext, message *string) error {
     tla.debugTriggered = true
 
@@ -91,30 +97,15 @@ func (tla *testLogAdapter) Errorf(lc *LogContext, message *string) error {
     return nil
 }
 
-// Factory for the test logging-adapter.
-type testAdapterMaker struct {
-
-}
-
-func newTestAdapterMaker() *testAdapterMaker {
-    return new(testAdapterMaker)
-}
-
-func (cam testAdapterMaker) New() LogAdapter {
-    return &testLogAdapter{
-        id: rand.Int(),
-    }
-}
-
 // Tests
 
 func TestConfigurationOverride(t *testing.T) {
-    oldLevelName := levelName
-    
-    levelName = "xyz"
+    cs := getConfigState()
     defer func() {
-        levelName = oldLevelName
+        setConfigState(cs)
     }()
+
+    levelName = "xyz"
 
     // Overwrite configuration, first thing.
     tcp := newTestConfigurationProvider(LevelNameDebug)
@@ -132,16 +123,16 @@ func TestConfigurationLevelDirectOverride(t *testing.T) {
 
     ClearAdapters()
 
-    tam := newTestAdapterMaker()
-    AddAdapterMaker("test", tam)
+    tla1 := newTestLogAdapter()
+    AddAdapter("test", tla1)
 
-    l := NewLoggerWithAdapter("logTest", "test")
+    l := NewLoggerWithAdapterName("logTest", "test")
 
     // Usually we don't configure until the first message. Force it.
     l.doConfigure(false)
-    tla := l.Adapter().(*testLogAdapter)
+    tla2 := l.Adapter().(*testLogAdapter)
 
-    if tla.debugTriggered != false {
+    if tla2.debugTriggered != false {
         t.Error("Debug flag should've been FALSE initially but wasn't.")
     }
 
@@ -152,11 +143,11 @@ func TestConfigurationLevelDirectOverride(t *testing.T) {
     l.doConfigure(true)
     
     // Re-retrieve. This is reconstructed during reconfiguration.
-    tla = l.Adapter().(*testLogAdapter)
+    tla3 := l.Adapter().(*testLogAdapter)
 
     l.Debugf(nil, "Debug message")
 
-    if tla.debugTriggered != false {
+    if tla3.debugTriggered != false {
         t.Error("Debug message not through but wasn't supposed to.")
     }
 
@@ -167,32 +158,37 @@ func TestConfigurationLevelDirectOverride(t *testing.T) {
     l.doConfigure(true)
 
     // Re-retrieve. This is reconstructed during reconfiguration.
-    tla = l.Adapter().(*testLogAdapter)
+    tla4 := l.Adapter().(*testLogAdapter)
 
     l.Debugf(nil, "Debug message")
 
-    if tla.debugTriggered == false {
+    if tla4.debugTriggered == false {
         t.Error("Debug message not getting through.")
     }
 }
 
 func TestConfigurationLevelProviderOverride(t *testing.T) {
+    cs := getConfigState()
+    defer func() {
+        setConfigState(cs)
+    }()
+
     // Overwrite configuration, first thing.
     tcp := newTestConfigurationProvider("")
     LoadConfiguration(tcp)
 
     ClearAdapters()
 
-    tam := newTestAdapterMaker()
-    AddAdapterMaker("test", tam)
+    tla1 := newTestLogAdapter()
+    AddAdapter("test", tla1)
 
-    l := NewLoggerWithAdapter("logTest", "test")
+    l := NewLoggerWithAdapterName("logTest", "test")
 
     // Usually we don't configure until the first message. Force it.
     l.doConfigure(false)
-    tla := l.Adapter().(*testLogAdapter)
+    tla2 := l.Adapter().(*testLogAdapter)
 
-    if tla.debugTriggered != false {
+    if tla2.debugTriggered != false {
         t.Error("Debug flag should've been FALSE initially but wasn't.")
     }
 
@@ -204,11 +200,11 @@ func TestConfigurationLevelProviderOverride(t *testing.T) {
     l.doConfigure(true)
     
     // Re-retrieve. This is reconstructed during reconfiguration.
-    tla = l.Adapter().(*testLogAdapter)
+    tla3 := l.Adapter().(*testLogAdapter)
 
     l.Debugf(nil, "Debug message")
 
-    if tla.debugTriggered != false {
+    if tla3.debugTriggered != false {
         t.Error("Debug message not through but wasn't supposed to.")
     }
 
@@ -220,11 +216,11 @@ func TestConfigurationLevelProviderOverride(t *testing.T) {
     l.doConfigure(true)
 
     // Re-retrieve. This is reconstructed during reconfiguration.
-    tla = l.Adapter().(*testLogAdapter)
+    tla4 := l.Adapter().(*testLogAdapter)
 
     l.Debugf(nil, "Debug message")
 
-    if tla.debugTriggered == false {
+    if tla4.debugTriggered == false {
         t.Error("Debug message not getting through.")
     }
 }
@@ -234,8 +230,8 @@ func TestDefaultAdapterAssignment(t *testing.T) {
 
     ClearAdapters()
 
-    tam := newTestAdapterMaker()
-    AddAdapterMaker("test1", tam)
+    tla := newTestLogAdapter()
+    AddAdapter("test1", tla)
 
     an := GetDefaultAdapterName()
     if an == "" {
@@ -255,49 +251,60 @@ func TestDefaultAdapterAssignment(t *testing.T) {
 }
 
 func TestAdapter(t *testing.T) {
+    cs := getConfigState()
+    defer func() {
+        setConfigState(cs)
+    }()
+
     // Overwrite configuration, first thing.
     tcp := newTestConfigurationProvider(LevelNameDebug)
     LoadConfiguration(tcp)
 
     ClearAdapters()
 
-    tam := newTestAdapterMaker()
-    AddAdapterMaker("test", tam)
+    tla1 := newTestLogAdapter()
+    AddAdapter("test", tla1)
 
-    l := NewLoggerWithAdapter("logTest", "test")
+    l := NewLoggerWithAdapterName("logTest", "test")
 
     l.doConfigure(false)
 
-    tla := l.Adapter().(*testLogAdapter)
+    tla2 := l.Adapter().(*testLogAdapter)
 
     l.Debugf(nil, "Debug message")
-    if tla.debugTriggered == false {
+    if tla2.debugTriggered == false {
         t.Error("Debug message not getting through.")
     }
 
     l.Infof(nil, "Info message")
-    if tla.infoTriggered == false {
+    if tla2.infoTriggered == false {
         t.Error("Info message not getting through.")
     }
 
     l.Warningf(nil, "Warning message")
-    if tla.warningTriggered == false {
+    if tla2.warningTriggered == false {
         t.Error("Warning message not getting through.")
     }
 
     err := e.New("an error happened")
     l.Errorf(nil, err, "Error message")
-    if tla.errorTriggered == false {
+    if tla2.errorTriggered == false {
         t.Error("Error message not getting through.")
     }
 }
 
 func TestStaticConfiguration(t *testing.T) {
     cp := NewStaticConfigurationProvider()
+
+    cs := getConfigState()
+    defer func() {
+        setConfigState(cs)
+    }()
+
     scp := cp.(*StaticConfigurationProvider)
 
     scp.SetFormat("aa")
-    scp.SetAdapterName("bb")
+    scp.SetDefaultAdapterName("bb")
     scp.SetLevelName("cc")
     scp.SetIncludeNouns("dd")
     scp.SetExcludeNouns("ee")
@@ -309,8 +316,8 @@ func TestStaticConfiguration(t *testing.T) {
         t.Error("Static configuration provider was not set correctly: format")
     }
 
-    if GetDefaultAdapterName() != "bb" {
-        t.Error("Static configuration provider was not set correctly: adapterName")
+    if defaultAdapterName != "bb" {
+        t.Error("Static configuration provider was not set correctly: defaultAdapterName")
     }
 
     if levelName != "cc" {
@@ -336,10 +343,16 @@ func TestNoAdapter(t *testing.T) {
     l := NewLogger("logTest")
 
     if l.Adapter() != nil {
-        t.Error("Adapter on logger when no adapters was not nil.")
+        t.Error("Logger has an adapter at init when no adapters were available.")
     }
 
-    // Should be allowed, but nothing will happen.
+    l.doConfigure(false)
+
+    if l.Adapter() != nil {
+        t.Error("Logger has an adapter after configuration no adapters were available.")
+    }
+
+    // Should execute, but nothing will happen.
     err := e.New("an error happened")
     l.Errorf(nil, err, "Error message")
 }

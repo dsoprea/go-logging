@@ -41,11 +41,11 @@ var (
 
 // Errors
 var (
-    ErrAdapterMakerAlreadyDefined = e.New("adapter-maker already defined")
+    ErrAdapterAlreadyRegistered = e.New("adapter already registered")
     ErrFormatEmpty = e.New("format is empty")
     ErrExcludeLevelNameInvalid = e.New("exclude bypass-level is invalid")
     ErrNoAdapterConfigured = e.New("no default adapter configured")
-    ErrAdapterMakerIsNil = e.New("adapter-maker is nil")
+    ErrAdapterIsNil = e.New("adapter is nil")
     ErrConfigurationNotLoaded = e.New("can not configure because configuration is not loaded")
 )
 
@@ -56,7 +56,7 @@ var (
     excludeFilters = make(map[string]bool)
     useExcludeFilters = false
 
-    makers = make(map[string]AdapterMaker)
+    adapters = make(map[string]LogAdapter)
 
 // TODO(dustin): !! Finish implementing this.
     excludeBypassLevel = -1
@@ -90,29 +90,25 @@ func RemoveExcludeFilter(noun string) {
     }
 }
 
-type AdapterMaker interface {
-    New() LogAdapter
-}
-
-func AddAdapterMaker(name string, am AdapterMaker) {
-    if _, found := makers[name]; found == true {
-        Panic(ErrAdapterMakerAlreadyDefined)
+func AddAdapter(name string, la LogAdapter) {
+    if _, found := adapters[name]; found == true {
+        Panic(ErrAdapterAlreadyRegistered)
     }
 
-    if am == nil {
-        Panic(ErrAdapterMakerIsNil)
+    if la == nil {
+        Panic(ErrAdapterIsNil)
     }
 
-    makers[name] = am
+    adapters[name] = la
 
-    if adapterName == "" {
-        adapterName = name
+    if GetDefaultAdapterName() == "" {
+        SetDefaultAdapterName(name)
     }
 }
 
 func ClearAdapters() {
-    makers = make(map[string]AdapterMaker)
-    adapterName = ""
+    adapters = make(map[string]LogAdapter)
+    SetDefaultAdapterName("")
 }
 
 type LogAdapter interface {
@@ -148,28 +144,23 @@ type Logger struct {
 // This is very basic. It might be called at the module level at a point where 
 // configuration still hasn't been equipped or adapters registered. Those are 
 // done lazily (see `doConfigure`).
-func NewLoggerWithAdapter(noun string, adapterName string) *Logger {
+func NewLoggerWithAdapterName(noun string, adapterName string) *Logger {
     l := &Logger{
         noun: noun,
         an: adapterName,
 
         // We set this lazily since this function can, and will likely, be 
-        // called at the module-level and we won't have any makers registered 
-        // yet.
+        // called at the module-level and there won't be any adapters 
+        // registered yet.
         la: nil,
     }
 
     return l
 }
 
-// TODO(dustin): !! We need to cement the plan for how to configure the core project (currently use os.GetEnv() because that's what AppEngine requires). Then, we need to adopt it and impress the important of setting the default adapter-name there if the application will be depending on it. Otherwise, there's no way for us to have this when NewLogger() is called.
-// TODO(dustin): !! We might consider using a interface-driven design for providing the configuration. We can only do this if the NewLogger call can avoid using configuration (since that will be called a bunch of times before we have the opportunity to read the configuration.
 func NewLogger(noun string) *Logger {
-    if adapterName == "" {
-        Panic(ErrNoAdapterConfigured)
-    }
-
-    return NewLoggerWithAdapter(noun, adapterName)
+    an := GetDefaultAdapterName()
+    return NewLoggerWithAdapterName(noun, an)
 }
 
 func (l *Logger) Noun() string {
@@ -181,45 +172,55 @@ func (l *Logger) Adapter() LogAdapter {
 }
 
 func (l *Logger) doConfigure(force bool) {
-    if l.isConfigured == false || force == true {
-        if IsConfigurationLoaded() == false {
-            Panic(ErrConfigurationNotLoaded)
-        }
+    if l.isConfigured == true && force == false {
+        return
+    }
 
-        am, found := makers[l.an]
+    if IsConfigurationLoaded() == false {
+        Panic(ErrConfigurationNotLoaded)
+    }
+
+    // Set the adapter.
+
+    // If no specific adapter name was given, fallback to the default.
+    if l.an == "" {
+        l.an = GetDefaultAdapterName()
+    }
+
+    // If this is empty, then no specific adapter was given or no system 
+    // default was configured (which implies that no adapters were registered). 
+    // All of our logging will be skipped.
+    if l.an != "" {
+        la, found := adapters[l.an]
         if found == false {
             Panic(fmt.Errorf("adapter is not valid: %s", l.an))
         }
 
-        l.la = am.New()
-
-        // Set the level.
-
-        systemLevel, found := LevelNameMap[levelName]
-        if found == false {
-            panic(fmt.Errorf("log-level not valid: [%s]", levelName))
-        }
-
-        l.systemLevel = systemLevel
-
-        // Set the form.
-
-        if format == "" {
-            panic(ErrFormatEmpty)
-        }
-
-        l.SetFormat(format)
-
-        l.isConfigured = true
+        l.la = la
     }
-}
 
-func (l *Logger) SetFormat(format string) {
+    // Set the level.
+
+    systemLevel, found := LevelNameMap[levelName]
+    if found == false {
+        Panic(fmt.Errorf("log-level not valid: [%s]", levelName))
+    }
+
+    l.systemLevel = systemLevel
+
+    // Set the form.
+
+    if format == "" {
+        Panic(ErrFormatEmpty)
+    }
+
     if t, err := template.New("logItem").Parse(format); err != nil {
-        panic(err)
+        Panic(err)
     } else {
         l.t = t
     }
+
+    l.isConfigured = true
 }
 
 func (l *Logger) flattenMessage(lc *MessageContext, format *string, args []interface{}) (string, error) {
@@ -303,25 +304,25 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
 }
 
 func (l *Logger) Debugf(ctx context.Context, format string, args ...interface{}) {
-    // Only log if an adapter has chosen.
-    if GetDefaultAdapterName() != "" {
-        l.doConfigure(false)
+    l.doConfigure(false)
+
+    if l.la != nil {
         l.log(ctx, LevelDebug, l.la.Debugf, format, args)
     }
 }
 
 func (l *Logger) Infof(ctx context.Context, format string, args ...interface{}) {
-    // Only log if an adapter has chosen.
-    if GetDefaultAdapterName() != "" {
-        l.doConfigure(false)
+    l.doConfigure(false)
+
+    if l.la != nil {
         l.log(ctx, LevelInfo, l.la.Infof, format, args)
     }
 }
 
 func (l *Logger) Warningf(ctx context.Context, format string, args ...interface{}) {
-    // Only log if an adapter has chosen.
-    if GetDefaultAdapterName() != "" {
-        l.doConfigure(false)
+    l.doConfigure(false)
+
+    if l.la != nil {
         l.log(ctx, LevelWarning, l.la.Warningf, format, args)
     }
 }
@@ -354,10 +355,9 @@ func (l *Logger) Errorf(ctx context.Context, errRaw interface{}, format string, 
         err = errors.Wrap(errRaw, 1)
     }
 
-    // Only log if an adapter has chosen.
-    if GetDefaultAdapterName() != "" {
-        l.doConfigure(false)
+    l.doConfigure(false)
 
+    if l.la != nil {
         format, args = l.mergeStack(err, format, args)
         l.log(ctx, LevelError, l.la.Errorf, format, args)
     }
@@ -390,10 +390,9 @@ func (l *Logger) Panicf(ctx context.Context, errRaw interface{}, format string, 
         err = errors.Wrap(errRaw, 1)
     }
 
-    // Only log if an adapter has chosen.
-    if GetDefaultAdapterName() != "" {
-        l.doConfigure(false)
+    l.doConfigure(false)
 
+    if l.la != nil {
         format, args = l.mergeStack(err, format, args)
         err = l.log(ctx, LevelError, l.la.Errorf, format, args)
     }

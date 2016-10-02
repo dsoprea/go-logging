@@ -8,7 +8,7 @@ import (
 // Config keys.
 const (
     ckFormat = "LogFormat"
-    ckAdapterName = "LogAdapterName"
+    ckDefaultAdapterName = "LogDefaultAdapterName"
     ckLevelName = "LogLevelName"
     ckIncludeNouns = "LogIncludeNouns"
     ckExcludeNouns = "LogExcludeNouns"
@@ -27,7 +27,7 @@ var (
     format = defaultFormat
 
     // Alternative adapter (defaults to "appengine").
-    adapterName = ""
+    defaultAdapterName = ""
 
     // Alternative level at which to display log-items (defaults to 
     // "info").
@@ -53,17 +53,17 @@ var (
 
 // Return the current default adapter name.
 func GetDefaultAdapterName() string {
-    return adapterName
+    return defaultAdapterName
 }
 
 // The adapter will automatically be the first one registered. This overrides 
 // that.
 func SetDefaultAdapterName(name string) {
-    adapterName = name
+    defaultAdapterName = name
 }
 
 func LoadConfiguration(cp ConfigurationProvider) {
-    adapterName = cp.AdapterName()
+    defaultAdapterName = cp.DefaultAdapterName()
     includeNouns = cp.IncludeNouns()
     excludeNouns = cp.ExcludeNouns()
     excludeBypassLevelName = cp.ExcludeBypassLevelName()
@@ -81,16 +81,36 @@ func LoadConfiguration(cp ConfigurationProvider) {
     configurationLoaded = true
 }
 
-func GetConfigDump() string {
+func getConfigState() map[string]interface{} {
+    return map[string]interface{} {
+        "format": format,
+        "defaultAdapterName": defaultAdapterName,
+        "levelName": levelName,
+        "includeNouns": includeNouns,
+        "excludeNouns": excludeNouns,
+        "excludeBypassLevelName": excludeBypassLevelName,
+    }
+}
+
+func setConfigState(config map[string]interface{}) {
+    format = config["format"].(string)
+    defaultAdapterName = config["defaultAdapterName"].(string)
+    levelName = config["levelName"].(string)
+    includeNouns = config["includeNouns"].(string)
+    excludeNouns = config["excludeNouns"].(string)
+    excludeBypassLevelName = config["excludeBypassLevelName"].(string)
+}
+
+func getConfigDump() string {
     return fmt.Sprintf(
         "Current configuration:\n" +
         "  FORMAT=[%s]\n" +
-        "  ADAPTER-NAME=[%s]\n" +
+        "  DEFAULT-ADAPTER-NAME=[%s]\n" +
         "  LEVEL-NAME=[%s]\n" +
         "  INCLUDE-NOUNS=[%s]\n" +
         "  EXCLUDE-NOUNS=[%s]\n" +
         "  EXCLUDE-BYPASS-LEVEL-NAME=[%s]", 
-        format, adapterName, levelName, includeNouns, excludeNouns, excludeBypassLevelName)
+        format, defaultAdapterName, levelName, includeNouns, excludeNouns, excludeBypassLevelName)
 }
 
 func IsConfigurationLoaded() bool {
@@ -102,7 +122,7 @@ type ConfigurationProvider interface {
     Format() string
 
     // Alternative adapter (defaults to "appengine").
-    AdapterName() string
+    DefaultAdapterName() string
 
     // Alternative level at which to display log-items (defaults to 
     // "info").
@@ -134,8 +154,8 @@ func (ecp *EnvironmentConfigurationProvider) Format() string {
     return os.Getenv(ckFormat)
 }
 
-func (ecp *EnvironmentConfigurationProvider) AdapterName() string {
-    return os.Getenv(ckAdapterName)
+func (ecp *EnvironmentConfigurationProvider) DefaultAdapterName() string {
+    return os.Getenv(ckDefaultAdapterName)
 }
 
 func (ecp *EnvironmentConfigurationProvider) LevelName() string {
@@ -157,7 +177,7 @@ func (ecp *EnvironmentConfigurationProvider) ExcludeBypassLevelName() string {
 // Static configuration-provider.
 type StaticConfigurationProvider struct {
     format string
-    adapterName string
+    defaultAdapterName string
     levelName string
     includeNouns string
     excludeNouns string
@@ -172,8 +192,8 @@ func (scp *StaticConfigurationProvider) SetFormat(format string) {
     scp.format = format
 }
 
-func (scp *StaticConfigurationProvider) SetAdapterName(adapterName string) {
-    scp.adapterName = adapterName
+func (scp *StaticConfigurationProvider) SetDefaultAdapterName(adapterName string) {
+    scp.defaultAdapterName = adapterName
 }
 
 func (scp *StaticConfigurationProvider) SetLevelName(levelName string) {
@@ -197,8 +217,8 @@ func (scp *StaticConfigurationProvider) Format() string {
     return scp.format
 }
 
-func (scp *StaticConfigurationProvider) AdapterName() string {
-    return scp.adapterName
+func (scp *StaticConfigurationProvider) DefaultAdapterName() string {
+    return scp.defaultAdapterName
 }
 
 func (scp *StaticConfigurationProvider) LevelName() string {

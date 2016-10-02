@@ -14,29 +14,32 @@ The simplest, possible example:
 package thispackage
 
 import (
-    "golang.org/x/net/context"
+    "context"
+    "errors"
 
     "github.com/dsoprea/go-logging"
-    "github.com/dsoprea/go-appengine-logging"
 )
 
 var (
-    thisfile_log = log.NewLogger("thisfile")
+    thisfileLog = log.NewLogger("thispackage.thisfile")
 )
 
 func a_cry_for_help(ctx context.Context) {
-    thisfile_log.Errorf(ctx, "How big is my problem: %s", "pretty big")
+    err := errors.New("a big error")
+    thisfileLog.Errorf(ctx, err, "How big is my problem: %s", "pretty big")
 }
 
 func init() {
-    log.AddAdapterMaker("appengine", aelog.NewAppengineAdapterMaker())
+    cla := log.NewConsoleLogAdapter()
+    log.AddAdapter("appengine", cla)
 }
 ```
 
 Notice two things:
 
-1. We configure the "appengine" adapter factory. The first adapter registered will be used be default.
-2. We pass in-the name of a prefix (what we refer to as a "noun") to `log.NewLogger()`. This is a simple, descriptive name that represents the current body of logic. We recommend that you define a different log for every file at the package level, but it is your choice if you want to go with this methodology, share the same logger over the entire package, define one for each struct, etc..
+1. We register the "console" adapter at the bottom. The first adapter registered will be used by default.
+2. We pass-in a prefix (what we refer to as a "noun") to `log.NewLogger()`. This is a simple, descriptive name that represents the subject of the file. By convention, we dot-separate the package and the name of the file. We recommend that you define a different log for every file at the package level, but it is your choice whether you want to do this or share the same logger over the entire package, define one in each struct, etc..
+
 
 ### Example Output
 
@@ -54,11 +57,11 @@ Example output from a real application (not from the above):
 
 ## Adapters
 
-This project provides one built-in logging adapter: "console", which prints to the screen. To register it:
+This project provides one built-in logging adapter, "console", which prints to the screen. To register it:
 
 ```go
-cam := log.NewConsoleAdapterMaker()
-log.AddAdapterMaker("console", cam)
+cla := log.NewConsoleLogAdapter()
+log.AddAdapter("console", cla)
 ```
 
 ### Custom Adapters
@@ -109,41 +112,19 @@ func (dla *DummyLogAdapter) Errorf(lc *LogContext, message *string) error {
 }
 ```
 
-There are a couple of ways to tell Logger to use a specific adapter:
-
-1. Instead of calling `log.NewLogger(noun string)`, call `log.NewLoggerWithAdapter(noun string, adapterName string)`.
-2. Register a factory type for your adapter and set the name of the adapter from your configuration.
-
-
-The factory must satisfy the *AdapterMaker* interface:
-
-```go
-type AdapterMaker interface {
-    New() LogAdapter
-}
-```
-
-An example factory and registration of the factory:
-
-```go
-type DummyLogAdapterMaker struct {
-    
-}
-
-func (dlam *DummyLogAdapterMaker) New() log.LogAdapter {
-    return new(DummyLogAdapter)
-}
-```
-
-We then recommending registering it from the `init()` function of the fiel that defines the maker type:
+Then, register it:
 
 ```go
 func init() {
-    log.AddAdapterMaker("dummy", new(DummyLogAdapterMaker))
+    log.AddAdapter("dummy", new(DummyLogAdapter))
 }
 ```
 
-We discuss how to then reference the adapter-maker from configuration in the "Configuration" section below.
+If this is a task-specific implementation, just register it from the `init()` of the file that defines it.
+
+If this is the first adapter you've registered, it will be the default one used. Otherwise, you'll have to deliberately specify it when you are creating a logger: Instead of calling `log.NewLogger(noun string)`, call `log.NewLoggerWithAdapterName(noun string, adapterName string)`.
+
+We discuss how to configure the adapter from configuration in the "Configuration" section below.
 
 
 ### Adapter Notes
@@ -177,12 +158,15 @@ It is a good convention to exclude the nouns of any library you are writing whos
 
 The following configuration items are available:
 
-- *LogFormat*: The default format used to build the message that gets sent to the adapter. It is assumed that the adapter already prefixes the message with time and log-level (since the default AppEngine logger does). The default value is: `{{.Noun}}:{{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}`. The available tokens are "Noun", "ExcludeBypass", and "Message".
-- *LogAdapterName*: The name of the adapter to use when NewLogger() is called.
-- *LogLevelName*: The priority-level of messages permitted to be logged (all others will be discarded). By default, it is "info". Other levels are: "debug", "warning", "error", "critical"
-- *LogIncludeNouns*: Comma-separated list of nouns to log for. All others will be ignored.
-- *LogExcludeNouns*: Comma-separated list on nouns to exclude from logging.
-- *LogExcludeBypassLevelName*: The log-level at which we will show logging for nouns that have been excluded. Allows you to hide excessive, unimportant logging for nouns but to still see their warnings, errors, etc...
+- *Format*: The default format used to build the message that gets sent to the adapter. It is assumed that the adapter already prefixes the message with time and log-level (since the default AppEngine logger does). The default value is: `{{.Noun}}:{{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}`. The available tokens are "Noun", "ExcludeBypass", and "Message".
+- *DefaultAdapterName*: The default name of the adapter to use when NewLogger() is called (if this isn't defined then the name of the first registered adapter will be used).
+- *LevelName*: The priority-level of messages permitted to be logged (all others will be discarded). By default, it is "info". Other levels are: "debug", "warning", "error", "critical"
+- *IncludeNouns*: Comma-separated list of nouns to log for. All others will be ignored.
+- *ExcludeNouns*: Comma-separated list on nouns to exclude from logging.
+- *ExcludeBypassLevelName*: The log-level at which we will show logging for nouns that have been excluded. Allows you to hide excessive, unimportant logging for nouns but to still see their warnings, errors, etc...
+
+
+### Configuration Providers
 
 You provide the configuration by setting a configuration-provider. Configuration providers must satisfy the `ConfigurationProvider` interface. The following are provided with the project:
 
@@ -191,9 +175,9 @@ You provide the configuration by setting a configuration-provider. Configuration
 
 Environments such as AppEngine work best with `EnvironmentConfigurationProvider` as this is generally how configuration is exposed *by* AppEngine *to* the application. You can define this configuration directly in *that* configuration.
 
-By default, the environment configuration-provider is created and applied immediately. You may load another prior to logging any messages. A `Logger` instance will apply configuration the first time it is used.
+By default, the environment configuration-provider is created and applied immediately. You may load another prior to logging any messages. A `Logger` instance will import the configuration the first time it is used to log.
 
-If a configuration-provider does not provide a log-level or format, they will be defaulted (or left alone, if already set). If it does not provide an adapter-name, the adapter-name of the first registered adapter will be used.
+Again, if a configuration-provider does not provide a log-level or format, they will be defaulted (or left alone, if already set). If it does not provide an adapter-name, the adapter-name of the first registered adapter will be used.
 
 Usage instructions of both follow.
 
@@ -204,6 +188,8 @@ Usage instructions of both follow.
 ecp := log.NewEnvironmentConfigurationProvider()
 log.LoadConfiguration(ecp)
 ```
+
+Each of the items listed at the top of the "Configuration" section can be specified in the environment using a prefix of "Log" (e.g. LogDefaultAdapterName).
 
 
 ### Static Configuration
