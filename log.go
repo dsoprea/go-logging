@@ -426,6 +426,11 @@ func Wrap(err interface{}) *errors.Error {
     }
 }
 
+func Errorf(message string, args ...interface{}) *errors.Error {
+    err := fmt.Errorf(message, args...)
+    return errors.Wrap(err, 1)
+}
+
 func Panic(err interface{}) {
     _, ok := err.(*errors.Error)
     if ok == true {
