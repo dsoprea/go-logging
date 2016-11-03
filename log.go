@@ -453,6 +453,11 @@ func PanicIf(err interface{}) {
     }
 }
 
+// Is Proxy the Is() function from this package, for convenience.
+func Is(actual, against error) bool {
+    return errors.Is(actual, against)
+}
+
 func init() {
     if format == "" {
         format = defaultFormat
