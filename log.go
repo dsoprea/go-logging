@@ -348,17 +348,22 @@ func (l *Logger) mergeStack(err interface{}, format string, args []interface{}) 
 func (l *Logger) Errorf(ctx context.Context, errRaw interface{}, format string, args ...interface{}) {
     var err interface{}
 
-    _, ok := errRaw.(*errors.Error)
-    if ok == true {
-        err = errRaw
-    } else {
-        err = errors.Wrap(errRaw, 1)
+    if errRaw != nil {
+        _, ok := errRaw.(*errors.Error)
+        if ok == true {
+            err = errRaw
+        } else {
+            err = errors.Wrap(errRaw, 1)
+        }
     }
 
     l.doConfigure(false)
 
     if l.la != nil {
-        format, args = l.mergeStack(err, format, args)
+        if errRaw != nil {
+            format, args = l.mergeStack(err, format, args)
+        }
+
         l.log(ctx, LevelError, l.la.Errorf, format, args)
     }
 }
