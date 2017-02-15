@@ -23,26 +23,23 @@ const (
 
 // Config
 var (
-    // Alternative format (defaults to .
+    // Alternative format.
     format = defaultFormat
 
-    // Alternative adapter (defaults to "appengine").
+    // Alternative adapter.
     defaultAdapterName = ""
 
-    // Alternative level at which to display log-items (defaults to 
-    // "info").
+    // Alternative level at which to display log-items
     levelName = defaultLevelName
 
-    // Configuration-driven comma-separated list of nouns to include. Defaults
-    // to empty.
+    // Configuration-driven comma-separated list of nouns to include.
     includeNouns = ""
 
-    // Configuration-driven comma-separated list of nouns to exclude. Defaults 
-    // to empty.
+    // Configuration-driven comma-separated list of nouns to exclude.
     excludeNouns = ""
 
     // Level at which to disregard exclusion (if the severity of a message 
-    // meets or exceed this, always display). Defaults to empty.
+    // meets or exceed this, always display).
     excludeBypassLevelName = ""
 )
 

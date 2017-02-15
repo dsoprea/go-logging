@@ -31,7 +31,7 @@ func a_cry_for_help(ctx context.Context) {
 
 func init() {
     cla := log.NewConsoleLogAdapter()
-    log.AddAdapter("appengine", cla)
+    log.AddAdapter("console", cla)
 }
 ```
 
@@ -173,9 +173,11 @@ You provide the configuration by setting a configuration-provider. Configuration
 - `EnvironmentConfigurationProvider`: Read values from the environment.
 - `StaticConfigurationProvider`: Set values directly on the struct.
 
+**The configuration provider must be applied before doing any logging (otherwise it will have no effect).**
+
 Environments such as AppEngine work best with `EnvironmentConfigurationProvider` as this is generally how configuration is exposed *by* AppEngine *to* the application. You can define this configuration directly in *that* configuration.
 
-By default, the environment configuration-provider is created and applied immediately. You may load another prior to logging any messages. A `Logger` instance will import the configuration the first time it is used to log.
+By default, no configuration-provider is applied, the level is defaulted to INFO and the format is defaulted to "{{.Noun}}:{{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}". 
 
 Again, if a configuration-provider does not provide a log-level or format, they will be defaulted (or left alone, if already set). If it does not provide an adapter-name, the adapter-name of the first registered adapter will be used.
 
