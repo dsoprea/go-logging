@@ -143,7 +143,7 @@ type EnvironmentConfigurationProvider struct {
 
 }
 
-func NewEnvironmentConfigurationProvider() ConfigurationProvider {
+func NewEnvironmentConfigurationProvider() *EnvironmentConfigurationProvider {
     return new(EnvironmentConfigurationProvider)
 }
 
@@ -181,7 +181,7 @@ type StaticConfigurationProvider struct {
     excludeBypassLevelName string
 }
 
-func NewStaticConfigurationProvider() ConfigurationProvider {
+func NewStaticConfigurationProvider() *StaticConfigurationProvider {
     return new(StaticConfigurationProvider)
 }
 

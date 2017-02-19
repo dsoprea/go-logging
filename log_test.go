@@ -294,14 +294,12 @@ func TestAdapter(t *testing.T) {
 }
 
 func TestStaticConfiguration(t *testing.T) {
-    cp := NewStaticConfigurationProvider()
+    scp := NewStaticConfigurationProvider()
 
     cs := getConfigState()
     defer func() {
         setConfigState(cs)
     }()
-
-    scp := cp.(*StaticConfigurationProvider)
 
     scp.SetFormat("aa")
     scp.SetDefaultAdapterName("bb")
