@@ -158,7 +158,7 @@ It is a good convention to exclude the nouns of any library you are writing whos
 
 The following configuration items are available:
 
-- *Format*: The default format used to build the message that gets sent to the adapter. It is assumed that the adapter already prefixes the message with time and log-level (since the default AppEngine logger does). The default value is: `{{.Noun}}:{{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}`. The available tokens are "Noun", "ExcludeBypass", and "Message".
+- *Format*: The default format used to build the message that gets sent to the adapter. It is assumed that the adapter already prefixes the message with time and log-level (since the default AppEngine logger does). The default value is: `{{.Noun}}: [{{.Level}}] {{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}`. The available tokens are "Level", "Noun", "ExcludeBypass", and "Message".
 - *DefaultAdapterName*: The default name of the adapter to use when NewLogger() is called (if this isn't defined then the name of the first registered adapter will be used).
 - *LevelName*: The priority-level of messages permitted to be logged (all others will be discarded). By default, it is "info". Other levels are: "debug", "warning", "error", "critical"
 - *IncludeNouns*: Comma-separated list of nouns to log for. All others will be ignored.

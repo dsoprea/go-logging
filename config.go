@@ -17,7 +17,7 @@ const (
 
 // Other constants
 const (
-    defaultFormat = "{{.Noun}}:{{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}"
+    defaultFormat = "{{.Noun}}: [{{.Level}}] {{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}"
     defaultLevelName = LevelNameInfo
 )
 

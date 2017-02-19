@@ -37,6 +37,13 @@ var (
         LevelNameWarning: LevelWarning,
         LevelNameError: LevelError,
     }
+
+    LevelNameMapR = map[int]string {
+        LevelDebug: LevelNameDebug,
+        LevelInfo: LevelNameInfo,
+        LevelWarning: LevelNameWarning,
+        LevelError: LevelNameError,
+    }
 )
 
 // Errors
@@ -122,6 +129,7 @@ type LogAdapter interface {
 //                  we can add a template macro to prefix an exclamation of 
 //                  some sort.
 type MessageContext struct {
+    Level *string
     Noun *string
     Message *string
     ExcludeBypass bool
@@ -286,7 +294,15 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
         }
     }
 
+    levelName, found := LevelNameMapR[level]
+    if found == false {
+        Panic(fmt.Errorf("level not valid: (%d)", level))
+    }
+
+    levelName = strings.ToUpper(levelName)
+
     lc := &MessageContext{
+        Level: &levelName,
         Noun: &n,
         ExcludeBypass: didExcludeBypass,
     }
