@@ -461,6 +461,11 @@ func Panic(err interface{}) {
     }
 }
 
+func Panicf(message string, args ...interface{}) {
+    err := Errorf(message, args...)
+    Panic(err)
+}
+
 func PanicIf(err interface{}) {
     if err == nil {
         return
