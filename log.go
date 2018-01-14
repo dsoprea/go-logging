@@ -125,8 +125,8 @@ type LogAdapter interface {
     Errorf(lc *LogContext, message *string) error
 }
 
-// TODO(dustin): !! Also populate whether we've bypassed an exception so that 
-//                  we can add a template macro to prefix an exclamation of 
+// TODO(dustin): !! Also populate whether we've bypassed an exception so that
+//                  we can add a template macro to prefix an exclamation of
 //                  some sort.
 type MessageContext struct {
     Level *string
@@ -149,16 +149,16 @@ type Logger struct {
     noun string
 }
 
-// This is very basic. It might be called at the module level at a point where 
-// configuration still hasn't been equipped or adapters registered. Those are 
+// This is very basic. It might be called at the module level at a point where
+// configuration still hasn't been equipped or adapters registered. Those are
 // done lazily (see `doConfigure`).
 func NewLoggerWithAdapterName(noun string, adapterName string) *Logger {
     l := &Logger{
         noun: noun,
         an: adapterName,
 
-        // We set this lazily since this function can, and will likely, be 
-        // called at the module-level and there won't be any adapters 
+        // We set this lazily since this function can, and will likely, be
+        // called at the module-level and there won't be any adapters
         // registered yet.
         la: nil,
     }
@@ -195,8 +195,8 @@ func (l *Logger) doConfigure(force bool) {
         l.an = GetDefaultAdapterName()
     }
 
-    // If this is empty, then no specific adapter was given or no system 
-    // default was configured (which implies that no adapters were registered). 
+    // If this is empty, then no specific adapter was given or no system
+    // default was configured (which implies that no adapters were registered).
     // All of our logging will be skipped.
     if l.an != "" {
         la, found := adapters[l.an]
@@ -235,7 +235,7 @@ func (l *Logger) flattenMessage(lc *MessageContext, format *string, args []inter
     m := fmt.Sprintf(*format, args...)
 
     lc.Message = &m
-    
+
     var b bytes.Buffer
     if err := l.t.Execute(&b, *lc); err != nil {
         return "", err
@@ -249,7 +249,7 @@ func (l *Logger) allowMessage(noun string, level int) bool {
         return true
     }
 
-    // If we didn't hit an include filter and we *had* include filters, filter 
+    // If we didn't hit an include filter and we *had* include filters, filter
     // it out.
     if useIncludeFilters == true {
         return false
@@ -276,10 +276,10 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
         return nil
     }
 
-    // Preempt the normal filter checks if we can unconditionally allow at a 
+    // Preempt the normal filter checks if we can unconditionally allow at a
     // certain level and we've hit that level.
     //
-    // Notice that this is only relevant if the system-log level is letting 
+    // Notice that this is only relevant if the system-log level is letting
     // *anything* show logs at the level we came in with.
     canExcludeBypass := level >= excludeBypassLevel && excludeBypassLevel != -1
     didExcludeBypass := false
@@ -482,6 +482,23 @@ func PanicIf(err interface{}) {
 // Is Proxy the Is() function from this package, for convenience.
 func Is(actual, against error) bool {
     return errors.Is(actual, against)
+}
+
+// Print is a utility function to prevent the caller from having to import the
+// third-party library.
+func PrintError(err error) {
+    wrapped := Wrap(err)
+    fmt.Printf("Stack:\n\n%s\n", wrapped.ErrorStack())
+}
+
+// PrintErrorf is a utility function to prevent the caller from having to
+// import the third-party library.
+func PrintErrorf(err error, format string, args ...interface{}) {
+    wrapped := Wrap(err)
+
+    fmt.Printf(format, args...)
+    fmt.Printf("\n")
+    fmt.Printf("Stack:\n\n%s\n", wrapped.ErrorStack())
 }
 
 func init() {
