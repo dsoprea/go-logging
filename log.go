@@ -3,9 +3,9 @@ package log
 import (
     "text/template"
 
+    "bytes"
     e "errors"
     "fmt"
-    "bytes"
     "strings"
 
     "golang.org/x/net/context"
@@ -15,57 +15,57 @@ import (
 
 // Config severity integers.
 const (
-    LevelDebug = iota
-    LevelInfo = iota
+    LevelDebug   = iota
+    LevelInfo    = iota
     LevelWarning = iota
-    LevelError = iota
+    LevelError   = iota
 )
 
 // Config severity names.
 const (
-    LevelNameDebug = "debug"
-    LevelNameInfo = "info"
+    LevelNameDebug   = "debug"
+    LevelNameInfo    = "info"
     LevelNameWarning = "warning"
-    LevelNameError = "error"
+    LevelNameError   = "error"
 )
 
 // Seveirty name->integer map.
 var (
-    LevelNameMap = map[string]int {
-        LevelNameDebug: LevelDebug,
-        LevelNameInfo: LevelInfo,
+    LevelNameMap = map[string]int{
+        LevelNameDebug:   LevelDebug,
+        LevelNameInfo:    LevelInfo,
         LevelNameWarning: LevelWarning,
-        LevelNameError: LevelError,
+        LevelNameError:   LevelError,
     }
 
-    LevelNameMapR = map[int]string {
-        LevelDebug: LevelNameDebug,
-        LevelInfo: LevelNameInfo,
+    LevelNameMapR = map[int]string{
+        LevelDebug:   LevelNameDebug,
+        LevelInfo:    LevelNameInfo,
         LevelWarning: LevelNameWarning,
-        LevelError: LevelNameError,
+        LevelError:   LevelNameError,
     }
 )
 
 // Errors
 var (
     ErrAdapterAlreadyRegistered = e.New("adapter already registered")
-    ErrFormatEmpty = e.New("format is empty")
-    ErrExcludeLevelNameInvalid = e.New("exclude bypass-level is invalid")
-    ErrNoAdapterConfigured = e.New("no default adapter configured")
-    ErrAdapterIsNil = e.New("adapter is nil")
-    ErrConfigurationNotLoaded = e.New("can not configure because configuration is not loaded")
+    ErrFormatEmpty              = e.New("format is empty")
+    ErrExcludeLevelNameInvalid  = e.New("exclude bypass-level is invalid")
+    ErrNoAdapterConfigured      = e.New("no default adapter configured")
+    ErrAdapterIsNil             = e.New("adapter is nil")
+    ErrConfigurationNotLoaded   = e.New("can not configure because configuration is not loaded")
 )
 
 // Other
 var (
-    includeFilters = make(map[string]bool)
+    includeFilters    = make(map[string]bool)
     useIncludeFilters = false
-    excludeFilters = make(map[string]bool)
+    excludeFilters    = make(map[string]bool)
     useExcludeFilters = false
 
     adapters = make(map[string]LogAdapter)
 
-// TODO(dustin): !! Finish implementing this.
+    // TODO(dustin): !! Finish implementing this.
     excludeBypassLevel = -1
 )
 
@@ -129,24 +129,24 @@ type LogAdapter interface {
 //                  we can add a template macro to prefix an exclamation of
 //                  some sort.
 type MessageContext struct {
-    Level *string
-    Noun *string
-    Message *string
+    Level         *string
+    Noun          *string
+    Message       *string
     ExcludeBypass bool
 }
 
 type LogContext struct {
     Logger *Logger
-    Ctx context.Context
+    Ctx    context.Context
 }
 
 type Logger struct {
     isConfigured bool
-    an string
-    la LogAdapter
-    t *template.Template
-    systemLevel int
-    noun string
+    an           string
+    la           LogAdapter
+    t            *template.Template
+    systemLevel  int
+    noun         string
 }
 
 // This is very basic. It might be called at the module level at a point where
@@ -155,7 +155,7 @@ type Logger struct {
 func NewLoggerWithAdapterName(noun string, adapterName string) *Logger {
     l := &Logger{
         noun: noun,
-        an: adapterName,
+        an:   adapterName,
 
         // We set this lazily since this function can, and will likely, be
         // called at the module-level and there won't be any adapters
@@ -264,7 +264,7 @@ func (l *Logger) allowMessage(noun string, level int) bool {
 
 func (l *Logger) makeLogContext(ctx context.Context) *LogContext {
     return &LogContext{
-        Ctx: ctx,
+        Ctx:    ctx,
         Logger: l,
     }
 }
@@ -286,7 +286,7 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
 
     n := l.Noun()
 
-    if(l.allowMessage(n, level) == false) {
+    if l.allowMessage(n, level) == false {
         if canExcludeBypass == false {
             return nil
         } else {
@@ -302,8 +302,8 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
     levelName = strings.ToUpper(levelName)
 
     lc := &MessageContext{
-        Level: &levelName,
-        Noun: &n,
+        Level:         &levelName,
+        Noun:          &n,
         ExcludeBypass: didExcludeBypass,
     }
 
