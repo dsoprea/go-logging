@@ -149,26 +149,22 @@ type Logger struct {
     noun         string
 }
 
-// This is very basic. It might be called at the module level at a point where
-// configuration still hasn't been equipped or adapters registered. Those are
-// done lazily (see `doConfigure`).
-func NewLoggerWithAdapterName(noun string, adapterName string) *Logger {
-    l := &Logger{
+func NewLoggerWithAdapterName(noun string, adapterName string) (l *Logger) {
+    l = &Logger{
         noun: noun,
         an:   adapterName,
-
-        // We set this lazily since this function can, and will likely, be
-        // called at the module-level and there won't be any adapters
-        // registered yet.
-        la: nil,
     }
+
+    l.doConfigure(false)
 
     return l
 }
 
-func NewLogger(noun string) *Logger {
+func NewLogger(noun string) (l *Logger) {
     an := GetDefaultAdapterName()
-    return NewLoggerWithAdapterName(noun, an)
+    l = NewLoggerWithAdapterName(noun, an)
+
+    return l
 }
 
 func (l *Logger) Noun() string {
@@ -320,24 +316,18 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
 }
 
 func (l *Logger) Debugf(ctx context.Context, format string, args ...interface{}) {
-    l.doConfigure(false)
-
     if l.la != nil {
         l.log(ctx, LevelDebug, l.la.Debugf, format, args)
     }
 }
 
 func (l *Logger) Infof(ctx context.Context, format string, args ...interface{}) {
-    l.doConfigure(false)
-
     if l.la != nil {
         l.log(ctx, LevelInfo, l.la.Infof, format, args)
     }
 }
 
 func (l *Logger) Warningf(ctx context.Context, format string, args ...interface{}) {
-    l.doConfigure(false)
-
     if l.la != nil {
         l.log(ctx, LevelWarning, l.la.Warningf, format, args)
     }
@@ -372,8 +362,6 @@ func (l *Logger) Errorf(ctx context.Context, errRaw interface{}, format string, 
             err = errors.Wrap(errRaw, 1)
         }
     }
-
-    l.doConfigure(false)
 
     if l.la != nil {
         if errRaw != nil {
@@ -410,8 +398,6 @@ func (l *Logger) Panicf(ctx context.Context, errRaw interface{}, format string, 
     } else {
         err = errors.Wrap(errRaw, 1)
     }
-
-    l.doConfigure(false)
 
     if l.la != nil {
         format, args = l.mergeStack(err, format, args)

@@ -3,11 +3,11 @@ package log
 import (
     "math/rand"
 
-    "testing"
     e "errors"
+    "testing"
 )
 
-// Extends the default environment configuration-provider to set the level to 
+// Extends the default environment configuration-provider to set the level to
 // "debug" (so none of our messages get filtered).
 type testConfigurationProvider struct {
     levelName string
@@ -61,10 +61,10 @@ func (tec *testConfigurationProvider) LevelName() string {
 type testLogAdapter struct {
     id int
 
-    debugTriggered bool
-    infoTriggered bool
+    debugTriggered   bool
+    infoTriggered    bool
     warningTriggered bool
-    errorTriggered bool
+    errorTriggered   bool
 }
 
 func newTestLogAdapter() LogAdapter {
@@ -138,10 +138,10 @@ func TestConfigurationLevelDirectOverride(t *testing.T) {
 
     // Set the level high to prevent logging, first.
     levelName = LevelNameError
-    
+
     // Force a reconfig (which will bring in the new level).
     l.doConfigure(true)
-    
+
     // Re-retrieve. This is reconstructed during reconfiguration.
     tla3 := l.Adapter().(*testLogAdapter)
 
@@ -195,10 +195,10 @@ func TestConfigurationLevelProviderOverride(t *testing.T) {
     // Set the level high to prevent logging, first.
     tcp = newTestConfigurationProvider(LevelNameError)
     LoadConfiguration(tcp)
-    
+
     // Force a reconfig (which will bring in the new level).
     l.doConfigure(true)
-    
+
     // Re-retrieve. This is reconstructed during reconfiguration.
     tla3 := l.Adapter().(*testLogAdapter)
 
@@ -353,4 +353,38 @@ func TestNoAdapter(t *testing.T) {
     // Should execute, but nothing will happen.
     err := e.New("an error happened")
     l.Errorf(nil, err, "Error message")
+}
+
+func TestNewLogger(t *testing.T) {
+    noun := "logTest"
+
+    l := NewLogger(noun)
+    if l.noun != noun {
+        t.Fatalf("Noun not correct: [%s]", l.noun)
+    }
+}
+
+func TestNewLoggerWithAdapterName(t *testing.T) {
+    noun := "logTest"
+
+    originalDefaultAdapterName := GetDefaultAdapterName()
+
+    adapterName := "abcdef"
+
+    cla := NewConsoleLogAdapter()
+    AddAdapter(adapterName, cla)
+
+    SetDefaultAdapterName(adapterName)
+
+    defer func() {
+        SetDefaultAdapterName(originalDefaultAdapterName)
+        delete(adapters, adapterName)
+    }()
+
+    l := NewLoggerWithAdapterName(noun, adapterName)
+    if l.noun != noun {
+        t.Fatalf("Noun not correct: [%s]", l.noun)
+    } else if l.an != adapterName {
+        t.Fatalf("Adapter-name not correct: [%s]", l.an)
+    }
 }
