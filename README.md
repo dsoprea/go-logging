@@ -3,7 +3,24 @@
 
 ## Introduction
 
-Go's logging is pretty basic by design. Go under AppEngine is even more stripped down. For example, there is no logging struct (`Logger` under traditional Go) and there is no support for prefixes. This package not only equips an AppEngine application with both, but adds include/exclude filters, pluggable logging adapters, and configuration-driven design. This allows you to be able to turn on and off logging for certain packages/files or dependencies as well as to be able to do it from configuration (the YAML files, using `os.Getenv()`).
+This project bridges several gaps that are present in the standard logging support in Go:
+
+- Equips errors with stacktraces and provides a facility for printing them
+- Inherently supports the ability for each Go file to print its messages with a prefix representing that file/package
+- Adds some functions to specifically log messages of different levels (e.g. debug, error)
+- Adds a `PanicIf()` function that can be used to conditionally manage errors depending on whether an error variable is `nil` or actually has an error
+- Adds support for pluggable logging adapters (so the output can be sent somewhere other than the console)
+- Adds configuration (such as the logging level or adapter) that can be driven from the environment
+- Supports filtering to show/hide the logging of certain places of the application
+- The loggers can be definded at the package level, so you can determine which Go file any log message came from.
+
+When used with the Panic-Defer-Recover pattern in Go, even panics rising from the Go runtime will be caught and wrapped with a stacktrace. This compartmentalizes which function they could have originated from, which is, otherwise, potentially non-trivial to figure out.
+
+## AppEngine
+
+Go under AppEngine is very stripped down, such as there being no logging type (e.g. `Logger` in native Go) and there is no support for prefixing. As each logging call from this project takes a `Context`, this works cooperatively to bridge the additional gaps in AppEngine's logging support.
+
+With standard console logging outside of this context, that parameter will take a`nil`.
 
 
 ## Getting Started
@@ -38,7 +55,7 @@ func init() {
 Notice two things:
 
 1. We register the "console" adapter at the bottom. The first adapter registered will be used by default.
-2. We pass-in a prefix (what we refer to as a "noun") to `log.NewLogger()`. This is a simple, descriptive name that represents the subject of the file. By convention, we dot-separate the package and the name of the file. We recommend that you define a different log for every file at the package level, but it is your choice whether you want to do this or share the same logger over the entire package, define one in each struct, etc..
+2. We pass-in a prefix (what we refer to as a "noun") to `log.NewLogger()`. This is a simple, descriptive name that represents the subject of the file. By convention, we construct this by dot-separating the current package and the name of the file. We recommend that you define a different log for every file at the package level, but it is your choice whether you want to do this or share the same logger over the entire package, define one in each struct, etc..
 
 
 ### Example Output
