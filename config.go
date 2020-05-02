@@ -1,23 +1,23 @@
 package log
 
 import (
-    "os"
     "fmt"
+    "os"
 )
 
 // Config keys.
 const (
-    ckFormat = "LogFormat"
-    ckDefaultAdapterName = "LogDefaultAdapterName"
-    ckLevelName = "LogLevelName"
-    ckIncludeNouns = "LogIncludeNouns"
-    ckExcludeNouns = "LogExcludeNouns"
+    ckFormat                 = "LogFormat"
+    ckDefaultAdapterName     = "LogDefaultAdapterName"
+    ckLevelName              = "LogLevelName"
+    ckIncludeNouns           = "LogIncludeNouns"
+    ckExcludeNouns           = "LogExcludeNouns"
     ckExcludeBypassLevelName = "LogExcludeBypassLevelName"
 )
 
 // Other constants
 const (
-    defaultFormat = "{{.Noun}}: [{{.Level}}] {{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}"
+    defaultFormat    = "{{.Noun}}: [{{.Level}}] {{if eq .ExcludeBypass true}} [BYPASS]{{end}} {{.Message}}"
     defaultLevelName = LevelNameInfo
 )
 
@@ -38,7 +38,7 @@ var (
     // Configuration-driven comma-separated list of nouns to exclude.
     excludeNouns = ""
 
-    // Level at which to disregard exclusion (if the severity of a message 
+    // Level at which to disregard exclusion (if the severity of a message
     // meets or exceed this, always display).
     excludeBypassLevelName = ""
 )
@@ -53,14 +53,19 @@ func GetDefaultAdapterName() string {
     return defaultAdapterName
 }
 
-// The adapter will automatically be the first one registered. This overrides 
+// The adapter will automatically be the first one registered. This overrides
 // that.
 func SetDefaultAdapterName(name string) {
     defaultAdapterName = name
 }
 
 func LoadConfiguration(cp ConfigurationProvider) {
-    defaultAdapterName = cp.DefaultAdapterName()
+    configuredDefaultAdapterName := cp.DefaultAdapterName()
+
+    if configuredDefaultAdapterName != "" {
+        defaultAdapterName = configuredDefaultAdapterName
+    }
+
     includeNouns = cp.IncludeNouns()
     excludeNouns = cp.ExcludeNouns()
     excludeBypassLevelName = cp.ExcludeBypassLevelName()
@@ -79,18 +84,19 @@ func LoadConfiguration(cp ConfigurationProvider) {
 }
 
 func getConfigState() map[string]interface{} {
-    return map[string]interface{} {
-        "format": format,
-        "defaultAdapterName": defaultAdapterName,
-        "levelName": levelName,
-        "includeNouns": includeNouns,
-        "excludeNouns": excludeNouns,
+    return map[string]interface{}{
+        "format":                 format,
+        "defaultAdapterName":     defaultAdapterName,
+        "levelName":              levelName,
+        "includeNouns":           includeNouns,
+        "excludeNouns":           excludeNouns,
         "excludeBypassLevelName": excludeBypassLevelName,
     }
 }
 
 func setConfigState(config map[string]interface{}) {
     format = config["format"].(string)
+
     defaultAdapterName = config["defaultAdapterName"].(string)
     levelName = config["levelName"].(string)
     includeNouns = config["includeNouns"].(string)
@@ -100,13 +106,13 @@ func setConfigState(config map[string]interface{}) {
 
 func getConfigDump() string {
     return fmt.Sprintf(
-        "Current configuration:\n" +
-        "  FORMAT=[%s]\n" +
-        "  DEFAULT-ADAPTER-NAME=[%s]\n" +
-        "  LEVEL-NAME=[%s]\n" +
-        "  INCLUDE-NOUNS=[%s]\n" +
-        "  EXCLUDE-NOUNS=[%s]\n" +
-        "  EXCLUDE-BYPASS-LEVEL-NAME=[%s]", 
+        "Current configuration:\n"+
+            "  FORMAT=[%s]\n"+
+            "  DEFAULT-ADAPTER-NAME=[%s]\n"+
+            "  LEVEL-NAME=[%s]\n"+
+            "  INCLUDE-NOUNS=[%s]\n"+
+            "  EXCLUDE-NOUNS=[%s]\n"+
+            "  EXCLUDE-BYPASS-LEVEL-NAME=[%s]",
         format, defaultAdapterName, levelName, includeNouns, excludeNouns, excludeBypassLevelName)
 }
 
@@ -121,7 +127,7 @@ type ConfigurationProvider interface {
     // Alternative adapter (defaults to "appengine").
     DefaultAdapterName() string
 
-    // Alternative level at which to display log-items (defaults to 
+    // Alternative level at which to display log-items (defaults to
     // "info").
     LevelName() string
 
@@ -129,18 +135,17 @@ type ConfigurationProvider interface {
     // to empty.
     IncludeNouns() string
 
-    // Configuration-driven comma-separated list of nouns to exclude. Defaults 
+    // Configuration-driven comma-separated list of nouns to exclude. Defaults
     // to empty.
     ExcludeNouns() string
 
-    // Level at which to disregard exclusion (if the severity of a message 
+    // Level at which to disregard exclusion (if the severity of a message
     // meets or exceed this, always display). Defaults to empty.
     ExcludeBypassLevelName() string
 }
 
 // Environment configuration-provider.
 type EnvironmentConfigurationProvider struct {
-
 }
 
 func NewEnvironmentConfigurationProvider() *EnvironmentConfigurationProvider {
@@ -173,11 +178,11 @@ func (ecp *EnvironmentConfigurationProvider) ExcludeBypassLevelName() string {
 
 // Static configuration-provider.
 type StaticConfigurationProvider struct {
-    format string
-    defaultAdapterName string
-    levelName string
-    includeNouns string
-    excludeNouns string
+    format                 string
+    defaultAdapterName     string
+    levelName              string
+    includeNouns           string
+    excludeNouns           string
     excludeBypassLevelName string
 }
 
@@ -208,7 +213,6 @@ func (scp *StaticConfigurationProvider) SetExcludeNouns(excludeNouns string) {
 func (scp *StaticConfigurationProvider) SetExcludeBypassLevelName(excludeBypassLevelName string) {
     scp.excludeBypassLevelName = excludeBypassLevelName
 }
-
 
 func (scp *StaticConfigurationProvider) Format() string {
     return scp.format

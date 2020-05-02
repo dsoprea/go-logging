@@ -155,14 +155,11 @@ func NewLoggerWithAdapterName(noun string, adapterName string) (l *Logger) {
         an:   adapterName,
     }
 
-    l.doConfigure(false)
-
     return l
 }
 
 func NewLogger(noun string) (l *Logger) {
-    an := GetDefaultAdapterName()
-    l = NewLoggerWithAdapterName(noun, an)
+    l = NewLoggerWithAdapterName(noun, "")
 
     return l
 }
@@ -184,9 +181,6 @@ func (l *Logger) doConfigure(force bool) {
         Panic(ErrConfigurationNotLoaded)
     }
 
-    // Set the adapter.
-
-    // If no specific adapter name was given, fallback to the default.
     if l.an == "" {
         l.an = GetDefaultAdapterName()
     }
@@ -316,18 +310,24 @@ func (l *Logger) log(ctx context.Context, level int, lm LogMethod, format string
 }
 
 func (l *Logger) Debugf(ctx context.Context, format string, args ...interface{}) {
+    l.doConfigure(false)
+
     if l.la != nil {
         l.log(ctx, LevelDebug, l.la.Debugf, format, args)
     }
 }
 
 func (l *Logger) Infof(ctx context.Context, format string, args ...interface{}) {
+    l.doConfigure(false)
+
     if l.la != nil {
         l.log(ctx, LevelInfo, l.la.Infof, format, args)
     }
 }
 
 func (l *Logger) Warningf(ctx context.Context, format string, args ...interface{}) {
+    l.doConfigure(false)
+
     if l.la != nil {
         l.log(ctx, LevelWarning, l.la.Warningf, format, args)
     }
@@ -352,6 +352,8 @@ func (l *Logger) mergeStack(err interface{}, format string, args []interface{}) 
 }
 
 func (l *Logger) Errorf(ctx context.Context, errRaw interface{}, format string, args ...interface{}) {
+    l.doConfigure(false)
+
     var err interface{}
 
     if errRaw != nil {
@@ -390,6 +392,8 @@ func (l *Logger) ErrorIff(ctx context.Context, errRaw interface{}, format string
 }
 
 func (l *Logger) Panicf(ctx context.Context, errRaw interface{}, format string, args ...interface{}) {
+    l.doConfigure(false)
+
     var err interface{}
 
     _, ok := errRaw.(*errors.Error)
