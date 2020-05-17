@@ -469,8 +469,15 @@ func PanicIf(err interface{}) {
     }
 }
 
-// Is Proxy the Is() function from this package, for convenience.
+// Is checks if the left ("actual") error equals the right ("against") error.
+// The right must be an unwrapped error (the kind that you'd initialize as a
+// global variable). The left can be a wrapped or unwrapped error.
 func Is(actual, against error) bool {
+    // If it's an unwrapped error.
+    if _, ok := actual.(*errors.Error); ok == false {
+        return actual == against
+    }
+
     return errors.Is(actual, against)
 }
 

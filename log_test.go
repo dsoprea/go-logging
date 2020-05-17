@@ -1,10 +1,10 @@
 package log
 
 import (
-    "math/rand"
-
     e "errors"
     "testing"
+
+    "math/rand"
 )
 
 // Extends the default environment configuration-provider to set the level to
@@ -386,5 +386,38 @@ func TestNewLoggerWithAdapterName(t *testing.T) {
         t.Fatalf("Noun not correct: [%s]", l.noun)
     } else if l.an != adapterName {
         t.Fatalf("Adapter-name not correct: [%s]", l.an)
+    }
+}
+
+func TestIs__unwrapped__hit(t *testing.T) {
+    e1 := e.New("test error")
+    if Is(e1, e1) != true {
+        t.Fatalf("Is() should be true for an unwrapped success")
+    }
+}
+
+func TestIs__unwrapped__miss(t *testing.T) {
+    e1 := e.New("test error")
+    e2 := e.New("test error 2")
+
+    if Is(e1, e2) != false {
+        t.Fatalf("Is() should be false for an unwrapped failure")
+    }
+}
+
+func TestIs__wrapped__hit(t *testing.T) {
+    e2 := e.New("test error")
+    e1 := Wrap(e2)
+    if Is(e1, e2) != true {
+        t.Fatalf("Is() should be true for a wrapped success")
+    }
+}
+
+func TestIs__wrapped__miss(t *testing.T) {
+    e1 := Errorf("test error")
+    e2 := e.New("test error 2")
+
+    if Is(e1, e2) != false {
+        t.Fatalf("Is() should be false for a wrapped failure")
     }
 }
