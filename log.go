@@ -1,17 +1,19 @@
 package log
 
 import (
-    "text/template"
-
     "bytes"
     e "errors"
     "fmt"
     "strings"
+    "sync"
 
-    "golang.org/x/net/context"
+    "text/template"
 
     "github.com/go-errors/errors"
+    "golang.org/x/net/context"
 )
+
+// TODO(dustin): Finish symbol documentation
 
 // Config severity integers.
 const (
@@ -172,7 +174,14 @@ func (l *Logger) Adapter() LogAdapter {
     return l.la
 }
 
+var (
+    configureMutex sync.Mutex
+)
+
 func (l *Logger) doConfigure(force bool) {
+    configureMutex.Lock()
+    defer configureMutex.Unlock()
+
     if l.isConfigured == true && force == false {
         return
     }
