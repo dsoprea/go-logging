@@ -1,27 +1,27 @@
 package log
 
 import (
-    "testing"
+	"testing"
 )
 
 func TestConsole(t *testing.T) {
-    ecp := NewEnvironmentConfigurationProvider()
-    LoadConfiguration(ecp)
+	ecp := NewEnvironmentConfigurationProvider()
+	LoadConfiguration(ecp)
 
-    ClearAdapters()
+	ClearAdapters()
 
-    cla := NewConsoleLogAdapter()
-    AddAdapter("console", cla)
+	cla := NewConsoleLogAdapter()
+	AddAdapter("console", cla)
 
-    an := GetDefaultAdapterName()
-    if an != "console" {
-        t.Error("Console adapter was not properly registered.")
-    }
+	an := GetDefaultAdapterName()
+	if an != "console" {
+		t.Error("Console adapter was not properly registered.")
+	}
 
-    l := NewLoggerWithAdapterName("consoleTest", "console")
-    l.Debugf(nil, "")
+	l := NewLoggerWithAdapterName("consoleTest", "console")
+	l.Debugf(nil, "")
 
-    if l.Adapter() == nil {
-        t.Error("Adapter wasn't initialized correctly.")
-    }
+	if l.Adapter() == nil {
+		t.Error("Adapter wasn't initialized correctly.")
+	}
 }
