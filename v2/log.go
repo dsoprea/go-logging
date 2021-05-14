@@ -350,13 +350,15 @@ func (l *Logger) mergeStack(err interface{}, format string, args []interface{}) 
 		format = "%s"
 	}
 
-	var stackified *errors.Error
-	stackified, ok := err.(*errors.Error)
+	var stackified error
+	stackified, ok := err.(error)
 	if ok == false {
 		stackified = errors.Wrap(err, 2)
 	}
 
-	args = append(args, stackified.ErrorStack())
+	e := stackified.(*errors.Error)
+
+	args = append(args, e.ErrorStack())
 
 	return format, args
 }
@@ -395,7 +397,7 @@ func (l *Logger) Errorf(ctx context.Context, errRaw interface{}, format string, 
 	var err interface{}
 
 	if errRaw != nil {
-		_, ok := errRaw.(*errors.Error)
+		_, ok := errRaw.(error)
 		if ok == true {
 			err = errRaw
 		} else {
@@ -420,7 +422,7 @@ func (l *Logger) ErrorIff(ctx context.Context, errRaw interface{}, format string
 
 	var err interface{}
 
-	_, ok := errRaw.(*errors.Error)
+	_, ok := errRaw.(error)
 	if ok == true {
 		err = errRaw
 	} else {
@@ -436,7 +438,7 @@ func (l *Logger) Panicf(ctx context.Context, errRaw interface{}, format string, 
 
 	var wrapped interface{}
 
-	_, ok := errRaw.(*errors.Error)
+	_, ok := errRaw.(error)
 	if ok == true {
 		wrapped = errRaw
 	} else {
@@ -463,7 +465,7 @@ func (l *Logger) PanicIff(ctx context.Context, errRaw interface{}, format string
 
 	var err interface{}
 
-	_, ok := errRaw.(*errors.Error)
+	_, ok := errRaw.(error)
 	if ok == true {
 		err = errRaw
 	} else {
@@ -474,8 +476,8 @@ func (l *Logger) PanicIff(ctx context.Context, errRaw interface{}, format string
 }
 
 // Wrap returns a stack-wrapped error. If already stack-wrapped this is a no-op.
-func Wrap(err interface{}) *errors.Error {
-	es, ok := err.(*errors.Error)
+func Wrap(err interface{}) error {
+	es, ok := err.(error)
 	if ok == true {
 		return es
 	}
@@ -484,7 +486,7 @@ func Wrap(err interface{}) *errors.Error {
 }
 
 // Errorf returns a stack-wrapped error with a string-substituted message.
-func Errorf(message string, args ...interface{}) *errors.Error {
+func Errorf(message string, args ...interface{}) error {
 	err := fmt.Errorf(message, args...)
 	return errors.Wrap(err, 1)
 }
@@ -535,7 +537,10 @@ func Is(actual, against error) bool {
 // the third-party library.
 func PrintError(err error) {
 	wrapped := Wrap(err)
-	fmt.Printf("Stack:\n\n%s\n", wrapped.ErrorStack())
+
+	e := wrapped.(*errors.Error)
+
+	fmt.Printf("Stack:\n\n%s\n", e.ErrorStack())
 }
 
 // PrintErrorf is a utility function to prevent the caller from having to
@@ -543,9 +548,11 @@ func PrintError(err error) {
 func PrintErrorf(err error, format string, args ...interface{}) {
 	wrapped := Wrap(err)
 
+	e := wrapped.(*errors.Error)
+
 	fmt.Printf(format, args...)
 	fmt.Printf("\n")
-	fmt.Printf("Stack:\n\n%s\n", wrapped.ErrorStack())
+	fmt.Printf("Stack:\n\n%s\n", e.ErrorStack())
 }
 
 func init() {
